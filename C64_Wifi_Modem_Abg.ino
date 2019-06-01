@@ -742,7 +742,7 @@ void setup() {
   // Show initial display buffer contents on the screen --
   // the library initializes this with an Adafruit splash screen.
   display.display();
-  delay(2000); // Pause for 2 seconds
+  // delay(2000); // Pause for 2 seconds
 
   // Clear the buffer
   display.clearDisplay();
@@ -753,7 +753,7 @@ void setup() {
   // Show the display buffer on the screen. You MUST call display() after
   // drawing commands to make them visible on screen!
   display.display();
-  delay(2000);
+  // delay(2000);
   // display.display() is NOT necessary after every single drawing command,
   // unless that's what you want...rather, you can batch up a bunch of
   // drawing operations and then update the screen all at once by calling
@@ -767,7 +767,7 @@ void setup() {
 //  testfillroundrect(); // Draw rounded rectangles (filled)
 //  testdrawtriangle();  // Draw triangles (outlines)
 //  testfilltriangle();  // Draw triangles (filled)
-//  testdrawchar();      // Draw characters of the default font
+  testdrawchar();      // Draw characters of the default font
 //  testdrawstyles();    // Draw 'stylized' characters
 //  testscrolltext();    // Draw scrolling text
 //  testdrawbitmap();    // Draw a small bitmap image
@@ -781,6 +781,27 @@ void setup() {
 //  testanimate(logo_bmp, LOGO_WIDTH, LOGO_HEIGHT); // Animate bitmaps
 // ***************************************************** Integrate NodeMCU_DIYMORE_OLED_ssd1306_128x64_i2c project **************
 }
+
+// ***************************************************** Integrate NodeMCU_DIYMORE_OLED_ssd1306_128x64_i2c project **************
+void testdrawchar(void) {
+  display.clearDisplay();
+
+  display.setTextSize(1);      // Normal 1:1 pixel scale
+  display.setTextColor(WHITE); // Draw white text
+  display.setCursor(0, 0);     // Start at top-left corner
+  display.cp437(true);         // Use full 256 char 'Code Page 437' font
+
+  // Not all the characters will fit on the display. This is normal.
+  // Library will draw what it can and the rest will be clipped.
+  for(int16_t i=0; i<256; i++) {
+    if(i == '\n') display.write(' ');
+    else          display.write(i);
+  }
+
+  display.display();
+  //delay(2000);
+}
+// ***************************************************** Integrate NodeMCU_DIYMORE_OLED_ssd1306_128x64_i2c project **************
 
 String ipToString(IPAddress ip) {
   char s[16];
