@@ -111,7 +111,7 @@ static unsigned char ascToPetTable[256] = {
 #define SWITCH_PIN 0       // GPIO0 (programming mode pin)
 #define LED_PIN 12          // Status LED 
 #define DCD_PIN 2          // DCD Carrier Status
-// Moved RTS and CTS to GPIO 14 and 12 
+// Moved RTS and CTS to GPIO 14 and 12 from 4 and 5
 // #define RTS_PIN 4         // RTS Request to Send, connect to host's CTS pin
 // #define CTS_PIN 5         // CTS Clear to Send, connect to host's RTS pin
 #define RTS_PIN 14         // RTS Request to Send, connect to host's CTS pin 
