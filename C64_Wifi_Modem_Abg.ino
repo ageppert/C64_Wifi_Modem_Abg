@@ -26,6 +26,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// Need to press enter on the terminal to get through setup.
+
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <EEPROM.h>
@@ -106,12 +108,18 @@ static unsigned char ascToPetTable[256] = {
 #define BUSY_MSG_LEN    80
 #define LAST_ADDRESS    780
 
-#define SWITCH_PIN 0       // GPIO0 (programmind mode pin)
-#define LED_PIN 12          // Status LED
+#define SWITCH_PIN 0       // GPIO0 (programming mode pin)
+#define LED_PIN 12          // Status LED 
 #define DCD_PIN 2          // DCD Carrier Status
-#define RTS_PIN 4         // RTS Request to Send, connect to host's CTS pin
-#define CTS_PIN 5         // CTS Clear to Send, connect to host's RTS pin
-
+// Moved RTS and CTS to GPIO 14 and 12 from 4 and 5
+// #define RTS_PIN 4         // RTS Request to Send, connect to host's CTS pin
+// #define CTS_PIN 5         // CTS Clear to Send, connect to host's RTS pin
+#define RTS_PIN 14         // RTS Request to Send, connect to host's CTS pin 
+#define CTS_PIN 12        // CTS Clear to Send, connect to host's RTS pin 
+// HEARTBEAT
+#define BUILT_IN_LED_PIN    16 // aka GPIO16, D0 also works. HIGH is LED OFF.
+#define LED_HEARTBEAT_TIME_DELTA 250 // How many ms between LED HEARTBEAT blinks
+// END HEARTBEAT
 // Global variables
 String build = "20160621182048";
 String cmd = "";           // Gather a new AT command to this string from serial
@@ -119,8 +127,8 @@ bool cmdMode = true;       // Are we in AT command mode or connected mode
 bool callConnected = false;// Are we currently in a call
 bool telnet = false;       // Is telnet control code handling enabled
 bool verboseResults = false;
-//#define DEBUG 1          // Print additional debug information to serial channel
-#undef DEBUG
+#define DEBUG 1          // Print additional debug information to serial channel
+//#undef DEBUG
 #define LISTEN_PORT 6400   // Listen to this if not connected. Set to zero to disable.
 int tcpServerPort = LISTEN_PORT;
 #define RING_INTERVAL 3000 // How often to print RING when having a new incoming connection (ms)
@@ -131,6 +139,10 @@ char plusCount = 0;        // Go to AT mode at "+++" sequence, that has to be co
 unsigned long plusTime = 0;// When did we last receive a "+++" sequence
 #define LED_TIME 15         // How many ms to keep LED on at activity
 unsigned long ledTime = 0;
+#define LED_HEARTBEAT_TIME 250         // How many ms between LED HEARTBEAT blinks
+unsigned long ledHeartBeatTime = 0;
+unsigned long NowTime = 0 ;
+bool LED_HEARTBEAT_STATE = 1;
 #define TX_BUF_SIZE 256    // Buffer where to read from serial before writing to TCP
 // (that direction is very blocking by the ESP TCP stack,
 // so we can't do one byte a time.)
@@ -604,6 +616,9 @@ void welcome() {
    Arduino main init function
 */
 void setup() {
+// HEARTBEAT
+  pinMode(BUILT_IN_LED_PIN, OUTPUT);
+// END HEARTBEAT
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, HIGH); // off
   pinMode(SWITCH_PIN, INPUT);
@@ -629,8 +644,12 @@ void setup() {
   if (serialspeed < 0 || serialspeed > sizeof(bauds)) {
     serialspeed = 0;
   }
-
-  Serial.begin(bauds[serialspeed]);
+  #ifdef DEBUG
+    Serial.begin(74880);
+    Serial.println("EEPROM setup complete.");
+  #else
+    Serial.begin(bauds[serialspeed]);
+  #endif
 
   char c;
   //unsigned long startMillis = millis();
@@ -652,7 +671,9 @@ void setup() {
     //}
     yield();
   }
-
+  #ifdef DEBUG
+    Serial.println("yield() complete.");
+  #endif
   welcome();
 
   if (tcpServerPort > 0) tcpServer.begin();
@@ -668,6 +689,9 @@ void setup() {
   webServer.on("/ath", handleWebHangUp);
   webServer.begin();
   mdns.begin("C64WiFi", WiFi.localIP());
+  #ifdef DEBUG
+    Serial.println("Setup() complete.");
+  #endif
 }
 
 String ipToString(IPAddress ip) {
@@ -1485,6 +1509,22 @@ void loop()
     //if (tcpServerPort > 0) tcpServer.begin();
   }
 
-  // Turn off tx/rx led if it has been lit long enough to be visible
-  if (millis() - ledTime > LED_TIME) digitalWrite(LED_PIN, !digitalRead(LED_PIN)); // toggle LED state
+  HeartBeat();
+}
+
+void HeartBeat() {
+  static unsigned long HeartBeatSequence[] = {200,200,200,400}; // On, off, on, off 
+  static unsigned HeartBeatSequencePosition = 0;
+  static unsigned long NowTime = 0;
+  static bool LED_HEARTBEAT_STATE = LOW;
+  static unsigned long ledHeartBeatTimer = 0;
+  NowTime = millis();
+  if ((NowTime - ledHeartBeatTimer) >= HeartBeatSequence[HeartBeatSequencePosition])
+  {
+    LED_HEARTBEAT_STATE = !LED_HEARTBEAT_STATE;
+    ledHeartBeatTimer = NowTime;
+    HeartBeatSequencePosition++;
+    if(HeartBeatSequencePosition>3) {HeartBeatSequencePosition = 0;}
+  }
+  digitalWrite(BUILT_IN_LED_PIN, LED_HEARTBEAT_STATE);
 }
