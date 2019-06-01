@@ -767,7 +767,8 @@ void setup() {
 //  testfillroundrect(); // Draw rounded rectangles (filled)
 //  testdrawtriangle();  // Draw triangles (outlines)
 //  testfilltriangle();  // Draw triangles (filled)
-  testdrawchar();      // Draw characters of the default font
+//  testdrawchar();      // Draw characters of the default font
+  drawC64Wifi();      // Draw characters of the default font
 //  testdrawstyles();    // Draw 'stylized' characters
 //  testscrolltext();    // Draw scrolling text
 //  testdrawbitmap();    // Draw a small bitmap image
@@ -800,6 +801,18 @@ void testdrawchar(void) {
 
   display.display();
   //delay(2000);
+}
+void drawC64Wifi(void) {
+  display.clearDisplay();
+  display.setTextSize(2);      // Normal 2:1 pixel scale
+  display.setTextColor(WHITE); // Draw white text
+  display.setCursor(0,0);     // mid way down
+  display.cp437(true);         // Use full 256 char 'Code Page 437' font
+  display.println(F("   C=64   "));
+  display.println(F("Wifi Modem"));
+  display.println(F("OLED Hacks"));
+  display.println(F("  by Abg  "));
+  display.display();
 }
 // ***************************************************** Integrate NodeMCU_DIYMORE_OLED_ssd1306_128x64_i2c project **************
 
