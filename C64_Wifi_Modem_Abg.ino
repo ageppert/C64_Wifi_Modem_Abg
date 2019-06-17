@@ -214,6 +214,16 @@ static const unsigned char PROGMEM logo_bmp[] =
   B00000000, B00110000 };
 // ***************************************************** Integrate NodeMCU_DIYMORE_OLED_ssd1306_128x64_i2c project **************
 
+// ***************************************************** Integrate Node-MCU-Clone-Test-DTMF project **************
+#include <stdint.h>
+#include <HardwareSerial.h>
+#include "DTMF_Sound_Effects.h" // Tone pins 13 and 15, duration 150ms, pause 150ms
+  //uint8_t PhoneNumber[]={1,8,0,0,1,2,3,4,5,6,7}; // for special characters: 10=*, 11=#, 12=1sec delay
+  //uint8_t PhoneNumberLength = 10;  // adjust to length of phone number
+  uint8_t PhoneNumber[]={1,1,2,1,6,3,1,1,2,1,6,3};
+  uint8_t PhoneNumberLength = 12;  // adjust to length of phone number
+// ***************************************************** Integrate Node-MCU-Clone-Test-DTMF project **************
+
 String connectTimeString() {
   unsigned long now = millis();
   int secs = (now - connectTime) / 1000;
@@ -392,6 +402,7 @@ void connectWiFi() {
   }
   WiFi.begin(ssid.c_str(), password.c_str());
   Serial.print("\nCONNECTING TO SSID "); Serial.print(ssid);
+  OLEDWifiConnecting();
   uint8_t i = 0;
   while (WiFi.status() != WL_CONNECTED && i++ < 20) {
     digitalWrite(LED_PIN, LOW);
@@ -408,6 +419,7 @@ void connectWiFi() {
   } else {
     Serial.print("CONNECTED TO "); Serial.println(WiFi.SSID());
     Serial.print("IP ADDRESS: "); Serial.println(WiFi.localIP());
+    OLEDWifiConnected();
     updateLed();
   }
 }
@@ -666,7 +678,18 @@ void setup() {
   pinMode(CTS_PIN, INPUT);
   //digitalWrite(CTS_PIN, HIGH); // pull up
   setCarrier(false);
-
+// ***************************************************** Integrate NodeMCU_DIYMORE_OLED_ssd1306_128x64_i2c project **************
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3C for 128x64 
+    Serial.println(F("SSD1306 allocation failed"));
+  }
+  // Clear the buffer
+  display.clearDisplay();
+  display.display();
+  OLEDdrawC64Wifi();      // Draw characters of the default font
+// ***************************************************** Integrate NodeMCU_DIYMORE_OLED_ssd1306_128x64_i2c project **************
+// ***************************************************** Integrate Node-MCU-Clone-Test-DTMF project **************
+  DTMFSetup();
+// ***************************************************** Integrate Node-MCU-Clone-Test-DTMF project **************  
   EEPROM.begin(LAST_ADDRESS + 1);
   delay(10);
 
@@ -729,89 +752,42 @@ void setup() {
   #ifdef DEBUG
     Serial.println("Setup() complete.");
   #endif
-// ***************************************************** Integrate NodeMCU_DIYMORE_OLED_ssd1306_128x64_i2c project **************
-//  Serial.begin(9600);
-
-  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-  // Andy's test DIYMORE.CC
-  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3C for 128x64 
-    Serial.println(F("SSD1306 allocation failed"));
-    for(;;); // Don't proceed, loop forever
-  }
-
-  // Show initial display buffer contents on the screen --
-  // the library initializes this with an Adafruit splash screen.
-  display.display();
-  // delay(2000); // Pause for 2 seconds
-
-  // Clear the buffer
-  display.clearDisplay();
-
-  // Draw a single pixel in white
-  display.drawPixel(10, 10, WHITE);
-
-  // Show the display buffer on the screen. You MUST call display() after
-  // drawing commands to make them visible on screen!
-  display.display();
-  // delay(2000);
-  // display.display() is NOT necessary after every single drawing command,
-  // unless that's what you want...rather, you can batch up a bunch of
-  // drawing operations and then update the screen all at once by calling
-  // display.display(). These examples demonstrate both approaches...
-//  testdrawline();      // Draw many lines
-//  testdrawrect();      // Draw rectangles (outlines)
-//  testfillrect();      // Draw rectangles (filled)
-//  testdrawcircle();    // Draw circles (outlines)
-//  testfillcircle();    // Draw circles (filled)
-//  testdrawroundrect(); // Draw rounded rectangles (outlines)
-//  testfillroundrect(); // Draw rounded rectangles (filled)
-//  testdrawtriangle();  // Draw triangles (outlines)
-//  testfilltriangle();  // Draw triangles (filled)
-//  testdrawchar();      // Draw characters of the default font
-  drawC64Wifi();      // Draw characters of the default font
-//  testdrawstyles();    // Draw 'stylized' characters
-//  testscrolltext();    // Draw scrolling text
-//  testdrawbitmap();    // Draw a small bitmap image
-//
-//  // Invert and restore display, pausing in-between
-//  display.invertDisplay(true);
-//  delay(1000);
-//  display.invertDisplay(false);
-//  delay(1000);
-//
-//  testanimate(logo_bmp, LOGO_WIDTH, LOGO_HEIGHT); // Animate bitmaps
-// ***************************************************** Integrate NodeMCU_DIYMORE_OLED_ssd1306_128x64_i2c project **************
 }
 
 // ***************************************************** Integrate NodeMCU_DIYMORE_OLED_ssd1306_128x64_i2c project **************
-void testdrawchar(void) {
-  display.clearDisplay();
-
-  display.setTextSize(1);      // Normal 1:1 pixel scale
-  display.setTextColor(WHITE); // Draw white text
-  display.setCursor(0, 0);     // Start at top-left corner
-  display.cp437(true);         // Use full 256 char 'Code Page 437' font
-
-  // Not all the characters will fit on the display. This is normal.
-  // Library will draw what it can and the rest will be clipped.
-  for(int16_t i=0; i<256; i++) {
-    if(i == '\n') display.write(' ');
-    else          display.write(i);
-  }
-
-  display.display();
-  //delay(2000);
-}
-void drawC64Wifi(void) {
+void OLEDdrawC64Wifi(void) {
   display.clearDisplay();
   display.setTextSize(2);      // Normal 2:1 pixel scale
   display.setTextColor(WHITE); // Draw white text
   display.setCursor(0,0);     // mid way down
   display.cp437(true);         // Use full 256 char 'Code Page 437' font
-  display.println(F("   C=64   "));
-  display.println(F("Wifi Modem"));
-  display.println(F("OLED Hacks"));
-  display.println(F("  by Abg  "));
+  display.println(F("C=64 WIFI "));
+  display.println(F("OLED+DTMF "));
+  display.println(F("2400 BAUD "));
+  display.println(F("..RETURN.."));
+  display.display();
+}
+void OLEDWifiConnecting(void) {
+  display.clearDisplay();
+  display.setTextSize(2);      // Normal 2:1 pixel scale
+  display.setTextColor(WHITE); // Draw white text
+  display.setCursor(0,0);     // mid way down
+  display.cp437(true);         // Use full 256 char 'Code Page 437' font
+  display.println(F("C=64 WIFI "));
+  display.println(F("Connecting"));
+  display.println(F("...       "));
+  display.println(F("          "));
+  display.display();
+}
+void OLEDWifiConnected(void) {
+  display.clearDisplay();
+  display.setTextSize(2);      // Normal 2:1 pixel scale
+  display.setTextColor(WHITE); // Draw white text
+  display.setCursor(0,0);     // mid way down
+  display.cp437(true);         // Use full 256 char 'Code Page 437' font
+  display.println(F("C=64 WIFI "));
+  display.println(F("Connected "));
+  display.println(WiFi.SSID());
   display.display();
 }
 // ***************************************************** Integrate NodeMCU_DIYMORE_OLED_ssd1306_128x64_i2c project **************
@@ -995,6 +971,7 @@ void dialOut(String upCmd) {
   host.trim(); // remove leading or trailing spaces
   port.trim();
   Serial.print("DIALING "); Serial.print(host); Serial.print(":"); Serial.println(port);
+  dialNumber(PhoneNumber,PhoneNumberLength);  // Dial the number. Working code.
   char *hostChr = new char[host.length() + 1];
   host.toCharArray(hostChr, host.length() + 1);
   int portInt = port.toInt();
